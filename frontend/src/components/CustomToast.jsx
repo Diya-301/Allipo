@@ -7,7 +7,7 @@ const CustomToast = ({ closeToast }) => {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            <p style={{ margin: 0, fontSize: "14px", fontWeight: "bold", color: "#333" }}>Item added to cart!</p>
+            <p style={{ margin: 0, fontSize: "14px", fontWeight: "bold", color: "#fff" }}>Item added to cart!</p>
             <div style={{ display: "flex", gap: "10px" }}>
                 <button
                     onClick={() => {
