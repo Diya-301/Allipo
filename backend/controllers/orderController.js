@@ -5,6 +5,12 @@ import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 import { PDFDocument, rgb } from "pdf-lib";
 import fs from "fs";
+import path from 'path'
+import { fileURLToPath } from "url";
+
+// Define __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -58,202 +64,220 @@ const generateOrderConfirmationTemplate = (name) => {
     `;
 };
 
+
 // Function to generate the PDF invoice
-async function generateInvoice(orderDetails, outputPath, logoPath) {
+async function generateInvoice(orderDetails, logoPath) {
+    try {
+        // Validate logoPath
+        if (!fs.existsSync(logoPath)) {
+            throw new Error(`Logo file not found at path: ${logoPath}`);
+        }
 
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([600, 800]);
+        // Create PDF document
+        const pdfDoc = await PDFDocument.create();
+        const page = pdfDoc.addPage([600, 800]);
 
-    const logoImageBytes = fs.readFileSync(logoPath);
-    const logoImage = await pdfDoc.embedPng(logoImageBytes);
-    const logoWidth = 150;
-    const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
-    const logoX = (page.getWidth() - logoWidth) / 2;
-    const logoY = page.getHeight() - logoHeight - 20;
+        // Embed logo image
+        const logoImageBytes = fs.readFileSync(logoPath);
+        const logoImage = await pdfDoc.embedPng(logoImageBytes);
+        const logoWidth = 150;
+        const logoHeight = (logoImage.height / logoImage.width) * logoWidth;
+        const logoX = (page.getWidth() - logoWidth) / 2;
+        const logoY = page.getHeight() - logoHeight - 20;
 
-    page.drawImage(logoImage, {
-        x: logoX,
-        y: logoY,
-        width: logoWidth,
-        height: logoHeight,
-    });
+        page.drawImage(logoImage, {
+            x: logoX,
+            y: logoY,
+            width: logoWidth,
+            height: logoHeight,
+        });
 
-    const primaryColor = rgb(0, 0.2, 0.4);
-    const textColor = rgb(0, 0, 0);
-    let yOffset = logoY - 30;
-    page.drawText("50 Years of Manufacturing Experience", {
-        x: (page.getWidth() - 250) / 2,
-        y: yOffset,
-        size: 14,
-        color: primaryColor,
-    });
+        // Add company details
+        const primaryColor = rgb(0, 0.2, 0.4);
+        const textColor = rgb(0, 0, 0);
+        let yOffset = logoY - 30;
 
-    const companyDetails = [
-        "49, GIDC Estate, Makarpura, Vadodara-390 010.(India)",
-        "Contact Details: +91 8128354038 / +91 8238998187",
-        "Mail us At: allipochemicals@gmail.com / info@allipochemicals.com",
-    ];
+        page.drawText("50 Years of Manufacturing Experience", {
+            x: (page.getWidth() - 250) / 2,
+            y: yOffset,
+            size: 14,
+            color: primaryColor,
+        });
 
-    yOffset -= 40;
-    companyDetails.forEach((line) => {
-        page.drawText(line, {
+        const companyDetails = [
+            "49, GIDC Estate, Makarpura, Vadodara-390 010.(India)",
+            "Contact Details: +91 8128354038 / +91 8238998187",
+            "Mail us At: allipochemicals@gmail.com / info@allipochemicals.com",
+        ];
+
+        yOffset -= 40;
+        companyDetails.forEach((line) => {
+            page.drawText(line, {
+                x: 50,
+                y: yOffset,
+                size: 10,
+                color: textColor,
+            });
+            yOffset -= 15;
+        });
+
+        // Add invoice details
+        const fontSize = 12;
+        const titleFontSize = 20;
+
+        yOffset -= 40;
+        page.drawText("Order Invoice", {
             x: 50,
             y: yOffset,
-            size: 10,
-            color: textColor,
+            size: titleFontSize,
+            color: primaryColor,
         });
-        yOffset -= 15;
-    });
 
-    const fontSize = 12;
-    const titleFontSize = 20;
+        yOffset -= 30;
+        page.drawText("Billing Address:", {
+            x: 50,
+            y: yOffset,
+            size: fontSize,
+            color: primaryColor,
+        });
+        yOffset -= 20;
 
-    yOffset -= 40;
-    page.drawText("Order Invoice", {
-        x: 50,
-        y: yOffset,
-        size: titleFontSize,
-        color: primaryColor,
-    });
+        const addressLines = [
+            orderDetails.address.firstName,
+            orderDetails.address.street,
+            `${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.zipCode}`,
+            `Phone: ${orderDetails.address.phoneNumber}`,
+            `Email: ${orderDetails.address.email}`,
+        ];
 
-    yOffset -= 30;
-    page.drawText("Billing Address:", {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: primaryColor,
-    });
-    yOffset -= 20;
+        addressLines.forEach((line) => {
+            page.drawText(line, {
+                x: 50,
+                y: yOffset,
+                size: fontSize,
+                color: textColor,
+            });
+            yOffset -= 20;
+        });
 
-    const addressLines = [
-        orderDetails.address.firstName,
-        orderDetails.address.street,
-        `${orderDetails.address.city}, ${orderDetails.address.state}, ${orderDetails.address.zipCode}`,
-        `Phone: ${orderDetails.address.phoneNumber}`,
-        `Email: ${orderDetails.address.email}`,
-    ];
+        yOffset -= 40;
+        page.drawText("Order Details:", {
+            x: 50,
+            y: yOffset,
+            size: fontSize,
+            color: primaryColor,
+        });
+        yOffset -= 20;
 
-    addressLines.forEach((line) => {
-        page.drawText(line, {
+        page.drawText(`Order ID: ${orderDetails._id}`, {
             x: 50,
             y: yOffset,
             size: fontSize,
             color: textColor,
         });
         yOffset -= 20;
-    });
 
+        page.drawText(`Date: ${formatDate(orderDetails.date)}`, {
+            x: 50,
+            y: yOffset,
+            size: fontSize,
+            color: textColor,
+        });
+        yOffset -= 20;
 
-    yOffset -= 40;
-    page.drawText("Order Details:", {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: primaryColor,
-    });
-    yOffset -= 20;
+        page.drawText(`Status: ${orderDetails.status}`, {
+            x: 50,
+            y: yOffset,
+            size: fontSize,
+            color: textColor,
+        });
+        yOffset -= 20;
 
-    page.drawText(`Order ID: ${orderDetails._id}`, {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: textColor,
-    });
-    yOffset -= 20;
+        page.drawText(`Payment Method: ${orderDetails.paymentMethod}`, {
+            x: 50,
+            y: yOffset,
+            size: fontSize,
+            color: textColor,
+        });
+        yOffset -= 20;
 
-    page.drawText(`Date: ${formatDate(orderDetails.date)}`, {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: textColor,
-    });
-    yOffset -= 20;
-
-    page.drawText(`Status: ${orderDetails.status}`, {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: textColor,
-    });
-    yOffset -= 20;
-
-    page.drawText(`Payment Method: ${orderDetails.paymentMethod}`, {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: textColor,
-    });
-    yOffset -= 20;
-
-    page.drawText("Items:", {
-        x: 50,
-        y: yOffset,
-        size: fontSize,
-        color: primaryColor,
-    });
-    yOffset -= 20;
-
-    const headers = ["Product", "Grade", "Packaging", "Size", "Qty", "Price/kg", "Total"];
-    const columnWidths = [150, 50, 70, 50, 30, 60, 60];
-    let xOffset = 50;
-
-    headers.forEach((header, index) => {
-        page.drawText(header, {
-            x: xOffset,
+        page.drawText("Items:", {
+            x: 50,
             y: yOffset,
             size: fontSize,
             color: primaryColor,
         });
-        xOffset += columnWidths[index];
-    });
+        yOffset -= 20;
 
-    yOffset -= 20;
-    xOffset = 50;
+        const headers = ["Product", "Grade", "Packaging", "Size", "Qty", "Price/kg", "Total"];
+        const columnWidths = [150, 50, 70, 50, 30, 60, 60];
+        let xOffset = 50;
 
-    orderDetails.items.forEach((item) => {
-        const rowData = [
-            item.productName,
-            item.grade,
-            item.packaging,
-            item.size,
-            item.quantity.toString(),
-            `${item.pricePerKg.toFixed(2)}`,
-            `${item.total.toFixed(2)}`,
-        ];
-
-        rowData.forEach((data, index) => {
-            page.drawText(data, {
+        headers.forEach((header, index) => {
+            page.drawText(header, {
                 x: xOffset,
                 y: yOffset,
                 size: fontSize,
-                color: textColor,
+                color: primaryColor,
             });
             xOffset += columnWidths[index];
         });
 
         yOffset -= 20;
         xOffset = 50;
-    });
 
-    yOffset -= 20;
-    page.drawText(`Total Amount: Rs ${orderDetails.amount}`, {
-        x: 50,
-        y: yOffset,
-        size: fontSize + 2,
-        color: primaryColor,
-    });
+        orderDetails.items.forEach((item) => {
+            const rowData = [
+                item.productName,
+                item.grade,
+                item.packaging,
+                item.size,
+                item.quantity.toString(),
+                `${item.pricePerKg.toFixed(2)}`,
+                `${item.total.toFixed(2)}`,
+            ];
 
-    const pdfBytes = await pdfDoc.save();
-    fs.writeFileSync(outputPath, pdfBytes);
+            rowData.forEach((data, index) => {
+                page.drawText(data, {
+                    x: xOffset,
+                    y: yOffset,
+                    size: fontSize,
+                    color: textColor,
+                });
+                xOffset += columnWidths[index];
+            });
+
+            yOffset -= 20;
+            xOffset = 50;
+        });
+
+        yOffset -= 20;
+        page.drawText(`Total Amount: Rs ${orderDetails.amount}`, {
+            x: 50,
+            y: yOffset,
+            size: fontSize + 2,
+            color: primaryColor,
+        });
+
+        // Save and return PDF bytes
+        return await pdfDoc.save();
+    } catch (error) {
+        console.error("Error generating invoice:", error);
+        throw error;
+    }
 }
 
 // Placing orders using COD Method
 const placeOrder = async (req, res) => {
-
     try {
-
         const { userId, items, amount, address } = req.body;
 
+        // Validate required fields
+        if (!userId || !items || !amount || !address) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
+
+        // Create order data
         const orderData = {
             userId,
             items,
@@ -261,19 +285,21 @@ const placeOrder = async (req, res) => {
             amount,
             paymentMethod: "COD",
             payment: false,
-            date: Date.now()
-        }
+            date: Date.now(),
+        };
 
-        const newOrder = new orderModel(orderData)
-        await newOrder.save()
+        // Save order to database
+        const newOrder = new orderModel(orderData);
+        await newOrder.save();
 
-        await userModel.findByIdAndUpdate(userId, { cartData: {} })
+        // Clear user's cart
+        await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-        res.json({ success: true, message: "Order Placed" })
+        // Generate invoice
+        const logoPath = path.resolve(__dirname, "assets", "logo.png");
+        const pdfBytes = await generateInvoice(newOrder, logoPath);
 
-        const logoPath = "./assets/logo.png";
-        const pdfPath = `./invoices/invoice.pdf`;
-        await generateInvoice(newOrder, pdfPath, logoPath);
+        // Send confirmation email
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: orderData.address.email,
@@ -282,22 +308,22 @@ const placeOrder = async (req, res) => {
             attachments: [
                 {
                     filename: `invoice_${newOrder._id}.pdf`,
-                    path: pdfPath,
+                    content: pdfBytes,
+                    contentType: "application/pdf",
                 },
             ],
         };
 
         await transporter.sendMail(mailOptions);
-        fs.unlinkSync(pdfPath);
 
+        // Send success response
+        return res.json({ success: true, message: "Order Placed" });
 
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.error("Error placing order:", error);
+        return res.status(500).json({ success: false, message: error.message });
     }
-
-}
-
+};
 
 // Placing orders using Razorpay Method
 const placeOrderRazorpay = async (req, res) => {
@@ -340,18 +366,33 @@ const placeOrderRazorpay = async (req, res) => {
 
 const verifyRazorpay = async (req, res) => {
     try {
+        const { userId, razorpay_order_id } = req.body;
 
-        const { userId, razorpay_order_id } = req.body
+        // Validate required fields
+        if (!userId || !razorpay_order_id) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
+        }
 
-        const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
+        // Fetch order details from Razorpay
+        const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
+
+        // Check if payment is successful
         if (orderInfo.status === 'paid') {
-            const order = await orderModel.findByIdAndUpdate(orderInfo.receipt, { payment: true });
-            await userModel.findByIdAndUpdate(userId, { cartData: {} })
-            res.json({ success: true, message: "Payment Successful" })
-            const logoPath = "./assets/logo.png";
-            const pdfPath = `./invoices/invoice.pdf`;
-            await generateInvoice(order, pdfPath, logoPath);
+            // Update the order in the database
+            const order = await orderModel.findByIdAndUpdate(
+                orderInfo.receipt,
+                { payment: true },
+                { new: true } // Return the updated order
+            );
 
+            // Clear user's cart
+            await userModel.findByIdAndUpdate(userId, { cartData: {} });
+
+            // Generate invoice
+            const logoPath = path.resolve(__dirname, "assets", "logo.png");
+            const pdfBytes = await generateInvoice(order, logoPath);
+
+            // Send confirmation email
             const mailOptions = {
                 from: process.env.EMAIL_USER,
                 to: order.address.email,
@@ -360,23 +401,25 @@ const verifyRazorpay = async (req, res) => {
                 attachments: [
                     {
                         filename: `invoice_${order._id}.pdf`,
-                        path: pdfPath,
+                        content: pdfBytes,
+                        contentType: "application/pdf",
                     },
                 ],
             };
 
             await transporter.sendMail(mailOptions);
-            fs.unlinkSync(pdfPath);
 
+            // Send success response
+            return res.json({ success: true, message: "Payment Successful" });
         } else {
-            res.json({ success: false, message: 'Payment Failed' });
+            // Payment not successful
+            return res.json({ success: false, message: 'Payment Failed' });
         }
-
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.error("Error verifying Razorpay payment:", error);
+        return res.status(500).json({ success: false, message: error.message });
     }
-}
+};
 
 // All Orders data for Admin Panel
 const allOrders = async (req, res) => {
