@@ -271,24 +271,24 @@ const placeOrder = async (req, res) => {
 
         res.json({ success: true, message: "Order Placed" })
 
-        // const logoPath = "./assets/logo.png";
-        // const pdfPath = `./invoices/invoice.pdf`;
-        // await generateInvoice(newOrder, pdfPath, logoPath);
+        const logoPath = "./assets/logo.png";
+        const pdfPath = `./invoices/invoice.pdf`;
+        await generateInvoice(newOrder, pdfPath, logoPath);
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: orderData.address.email,
             subject: 'Order Confirmation',
             html: generateOrderConfirmationTemplate(newOrder.address.firstName),
-            // attachments: [
-            //     {
-            //         filename: `invoice_${newOrder._id}.pdf`,
-            //         path: pdfPath,
-            //     },
-            // ],
+            attachments: [
+                {
+                    filename: `invoice_${newOrder._id}.pdf`,
+                    path: pdfPath,
+                },
+            ],
         };
 
         await transporter.sendMail(mailOptions);
-        // fs.unlinkSync(pdfPath);
+        fs.unlinkSync(pdfPath);
 
 
     } catch (error) {
@@ -348,25 +348,25 @@ const verifyRazorpay = async (req, res) => {
             const order = await orderModel.findByIdAndUpdate(orderInfo.receipt, { payment: true });
             await userModel.findByIdAndUpdate(userId, { cartData: {} })
             res.json({ success: true, message: "Payment Successful" })
-            // const logoPath = "./assets/logo.png";
-            // const pdfPath = `./invoices/invoice.pdf`;
-            // await generateInvoice(order, pdfPath, logoPath);
+            const logoPath = "./assets/logo.png";
+            const pdfPath = `./invoices/invoice.pdf`;
+            await generateInvoice(order, pdfPath, logoPath);
 
             const mailOptions = {
                 from: process.env.EMAIL_USER,
                 to: order.address.email,
                 subject: 'Order Confirmation',
                 html: generateOrderConfirmationTemplate(order.address.firstName),
-                // attachments: [
-                //     {
-                //         filename: `invoice_${order._id}.pdf`,
-                //         path: pdfPath,
-                //     },
-                // ],
+                attachments: [
+                    {
+                        filename: `invoice_${order._id}.pdf`,
+                        path: pdfPath,
+                    },
+                ],
             };
 
             await transporter.sendMail(mailOptions);
-            // fs.unlinkSync(pdfPath);
+            fs.unlinkSync(pdfPath);
 
         } else {
             res.json({ success: false, message: 'Payment Failed' });
