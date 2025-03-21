@@ -8,6 +8,7 @@ import { assets } from '../assets/assets';
 const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAllOrders = async () => {
     if (!token) return null;
@@ -36,7 +37,7 @@ const Orders = ({ token }) => {
         { headers: { token } }
       );
       if (response.data.success) {
-        toast.success("Order Status Updated Sucessfully")
+        toast.success('Order Status Updated Successfully');
         await fetchAllOrders();
       }
     } catch (error) {
@@ -48,10 +49,19 @@ const Orders = ({ token }) => {
     fetchAllOrders();
   }, [token]);
 
-  const filteredOrders =
-    filter === 'All'
-      ? orders
-      : orders.filter((order) => order.status === filter);
+// Filter orders based on status and search query
+const filteredOrders =
+  filter === 'All'
+    ? orders.filter((order) =>
+        order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        new Date(order.date).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : orders
+        .filter((order) => order.status === filter)
+        .filter((order) =>
+          order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          new Date(order.date).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
   const getProgressBarStyle = (status) => {
     switch (status) {
@@ -72,24 +82,35 @@ const Orders = ({ token }) => {
 
   return (
     <div className="p-4 md:p-8 bg-white shadow-md min-h-screen">
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
         <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 md:mb-0">
           Manage Orders
         </h3>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="p-2 border border-gray-300 shadow-lg rounded text-sm md:text-base text-gray-700 w-full md:w-auto"
-        >
-          <option value="All">All</option>
-          <option value="Order Placed">Order Placed</option>
-          <option value="Processing">Processing</option>
-          <option value="Shipped">Shipped</option>
-          <option value="Delivered">Delivered</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
+        <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+          <input
+            type="text"
+            placeholder="Search by Order ID or Date"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="p-2 border border-gray-300 shadow-lg rounded text-sm md:text-base text-gray-700 w-full md:w-auto"
+          />
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="p-2 border border-gray-300 shadow-lg rounded text-sm md:text-base text-gray-700 w-full md:w-auto"
+          >
+            <option value="All">All</option>
+            <option value="Order Placed">Order Placed</option>
+            <option value="Processing">Processing</option>
+            <option value="Shipped">Shipped</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
       </div>
 
+      {/* Orders Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {filteredOrders.map((order, index) => (
           <div
@@ -108,6 +129,12 @@ const Orders = ({ token }) => {
                 </p>
                 <p className="text-sm md:text-base text-gray-700">
                   Payment: {order.payment ? 'Done' : 'Pending'}
+                </p>
+                <p className="text-sm md:text-base text-gray-700">
+                  Order ID: {order._id}
+                </p>
+                <p className="text-sm md:text-base text-gray-700">
+                  Order Date: {new Date(order.date).toLocaleDateString()}
                 </p>
               </div>
             </div>
