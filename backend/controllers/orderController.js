@@ -524,4 +524,99 @@ const updateStatus = async (req, res) => {
     }
 };
 
-export { verifyRazorpay, placeOrder, placeOrderRazorpay, allOrders, userOrders, updateStatus }
+const getOrderStats = async (req, res) => {
+    try {
+      // Calculate total orders, pending orders, completed orders, etc.
+      const totalOrders = await orderModel.countDocuments();
+      const pendingOrders = await orderModel.countDocuments({ status: 'Order Placed' });
+      const processingOrders = await orderModel.countDocuments({ status: 'Processing' });
+      const shippedOrders = await orderModel.countDocuments({ status: 'Shipped' });
+      const deliveredOrders = await orderModel.countDocuments({ status: 'Delivered' });
+      const cancelledOrders = await orderModel.countDocuments({ status: 'Cancelled' });
+  
+      // Calculate total revenue
+      const totalRevenue = await orderModel.aggregate([
+        { $group: { _id: null, total: { $sum: '$amount' } } }
+      ]);
+  
+      // Generate monthly order trends
+      const monthlyTrends = await orderModel.aggregate([
+        {
+          $group: {
+            _id: { month: { $month: { $toDate: "$date" } }, year: { $year: { $toDate: "$date" } } },
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+      ]);
+  
+      // Format monthly trends for frontend
+      const formattedTrends = monthlyTrends.map((trend) => ({
+        month: `${trend._id.year}-${String(trend._id.month).padStart(2, '0')}`,
+        orders: trend.count,
+        revenue: trend.totalAmount
+      }));
+  
+      // Payment method distribution
+      const paymentMethodDistribution = await orderModel.aggregate([
+        {
+          $group: {
+            _id: "$paymentMethod", // Group by payment method
+            count: { $sum: 1 } // Count orders per payment method
+          }
+        }
+      ]);
+  
+      // Top products by quantity sold (in kgs)
+    const topProductsByQuantity = await orderModel.aggregate([
+        { $unwind: "$items" }, // Unwind the items array
+        {
+          $addFields: {
+            numericSize: {
+              $toInt: {
+                $ifNull: [
+                  { $arrayElemAt: [{ $split: ["$items.size", "kg"] }, 0] }, // Extract numeric part before "kg"
+                  0 // Default to 0 if no numeric part is found
+                ]
+              }
+            }
+          }
+        },
+        {
+          $group: {
+            _id: "$items.productName", // Group by product name
+            totalQuantity: {
+              $sum: {
+                $multiply: ["$items.quantity", "$numericSize"] // Multiply quantity by numeric size
+              }
+            }
+          }
+        },
+        { $sort: { totalQuantity: -1 } }, // Sort by totalQuantity in descending order
+        { $limit: 5 } // Limit to top 5 products
+      ]);  
+  
+      // Send response
+      res.json({
+        success: true,
+        stats: {
+          totalOrders,
+          pendingOrders,
+          processingOrders,
+          shippedOrders,
+          deliveredOrders,
+          cancelledOrders,
+          totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].total : 0,
+        },
+        trends: formattedTrends,
+        paymentMethodDistribution,
+        topProductsByQuantity,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  };
+
+export { verifyRazorpay, placeOrder, placeOrderRazorpay, allOrders, userOrders, updateStatus, getOrderStats }
