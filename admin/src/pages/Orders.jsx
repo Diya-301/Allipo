@@ -31,9 +31,10 @@ const Orders = ({ token }) => {
 
   const statusHandler = async (event, orderId) => {
     try {
+      const statusValue = event.target.value === 'Order Received' ? 'Order Placed' : event.target.value;
       const response = await axios.post(
         backendUrl + '/api/order/status',
-        { orderId, status: event.target.value },
+        { orderId, status: statusValue },
         { headers: { token } }
       );
       if (response.data.success) {
@@ -49,22 +50,23 @@ const Orders = ({ token }) => {
     fetchAllOrders();
   }, [token]);
 
-// Filter orders based on status and search query
-const filteredOrders =
-  filter === 'All'
-    ? orders.filter((order) =>
-        order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        new Date(order.date).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : orders
-        .filter((order) => order.status === filter)
-        .filter((order) =>
+  // Filter orders based on status and search query
+  const filteredOrders =
+    filter === 'All'
+      ? orders.filter((order) =>
           order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
           new Date(order.date).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase())
-        );
+        )
+      : orders
+          .filter((order) => order.status === (filter === 'Order Received' ? 'Order Placed' : filter))
+          .filter((order) =>
+            order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            new Date(order.date).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase())
+          );
 
   const getProgressBarStyle = (status) => {
-    switch (status) {
+    const mappedStatus = status === 'Order Received' ? 'Order Placed' : status;
+    switch (mappedStatus) {
       case 'Order Placed':
         return { width: '25%', backgroundColor: 'gray' };
       case 'Processing':
@@ -101,7 +103,7 @@ const filteredOrders =
             className="p-2 border border-gray-300 shadow-lg rounded text-sm md:text-base text-gray-700 w-full md:w-auto"
           >
             <option value="All">All</option>
-            <option value="Order Placed">Order Placed</option>
+            <option value="Order Received">Order Received</option>
             <option value="Processing">Processing</option>
             <option value="Shipped">Shipped</option>
             <option value="Delivered">Delivered</option>
@@ -177,10 +179,10 @@ const filteredOrders =
               </p>
               <select
                 onChange={(event) => statusHandler(event, order._id)}
-                value={order.status}
+                value={order.status === 'Order Placed' ? 'Order Received' : order.status}
                 className="p-2 border border-gray-300 rounded text-sm md:text-base text-gray-700 w-full"
               >
-                <option value="Order Placed">Order Placed</option>
+                <option value="Order Received">Order Received</option>
                 <option value="Processing">Processing</option>
                 <option value="Shipped">Shipped</option>
                 <option value="Delivered">Delivered</option>
@@ -191,7 +193,7 @@ const filteredOrders =
             <div className="w-full bg-gray-200 rounded-full h-2 md:h-2.5">
               <div
                 className="h-full rounded-full"
-                style={getProgressBarStyle(order.status)}
+                style={getProgressBarStyle(order.status === 'Order Placed' ? 'Order Received' : order.status)}
               ></div>
             </div>
           </div>
