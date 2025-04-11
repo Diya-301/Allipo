@@ -62,6 +62,12 @@ const ProductDetails = () => {
         return;
       }
 
+      if (quantity <= 0) {
+        toast.error("Quantity must be greater than 0.");
+        setLoading(false);
+        return;
+      }
+
       const gradeDetails = getGradeDetails(selectedGrade);
       if (!gradeDetails) {
         toast.error("Invalid grade selection.");

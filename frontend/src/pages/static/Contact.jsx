@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 const Contact = () => {
   const Contact14Defaults = {
     heading: "Get in Touch",
-    description: "We’re here to assist you with any inquiries.",
+    description: "We're here to assist you with any inquiries.",
     contacts: [
       {
         icon: <BiEnvelope className="size-8" />,
@@ -73,44 +73,92 @@ const Contact = () => {
   const [phoneInput, setPhoneInput] = useState("");
   const [messageInput, setMessageInput] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () => {
+    const newErrors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[6-9]\d{9}$/;
+    const nameRegex = /^[A-Za-z\s]{2,}$/;
+
+    if (!firstNameInput.trim()) {
+      newErrors.firstName = "First name is required";
+    } else if (!nameRegex.test(firstNameInput.trim())) {
+      newErrors.firstName = "First name should contain only letters and be at least 2 characters long";
+    }
+
+    if (!lastNameInput.trim()) {
+      newErrors.lastName = "Last name is required";
+    } else if (!nameRegex.test(lastNameInput.trim())) {
+      newErrors.lastName = "Last name should contain only letters and be at least 2 characters long";
+    }
+
+    if (!emailInput.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(emailInput.trim())) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    if (!phoneInput.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!phoneRegex.test(phoneInput.trim())) {
+      newErrors.phone = "Please enter a valid 10-digit Indian phone number";
+    }
+
+    if (!messageInput.trim()) {
+      newErrors.message = "Message is required";
+    } else if (messageInput.trim().length < 10) {
+      newErrors.message = "Message should be at least 10 characters long";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const formData = {
-      firstName: firstNameInput,
-      lastName: lastNameInput,
-      email: emailInput,
-      phone: phoneInput,
-      message: messageInput,
-      acceptTerms: acceptTerms,
-    };
-    if (!acceptTerms) {
-      toast.info("Please Check the Terms & Conditions");
+    
+    if (!validateForm()) {
       return;
-    } else {
-      try {
-        const response = await fetch("https://formspree.io/f/myzegbzw", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
+    }
 
-        if (response.ok) {
-          toast.success("Form submitted successfully!");
-          setFirstNameInput("");
-          setLastNameInput("");
-          setEmailInput("");
-          setPhoneInput("");
-          setMessageInput("");
-          setAcceptTerms(false);
-        } else {
-          toast.error("Failed to submit form. Please try again.");
-        }
-      } catch (error) {
-        toast.error("Error submitting form:", error);
+    if (!acceptTerms) {
+      toast.info("Please accept the Terms & Conditions");
+      return;
+    }
+
+    try {
+      const formData = {
+        firstName: firstNameInput,
+        lastName: lastNameInput,
+        email: emailInput,
+        phone: phoneInput,
+        message: messageInput,
+        acceptTerms: acceptTerms,
+      };
+
+      const response = await fetch("https://formspree.io/f/myzegbzw", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success("Form submitted successfully!");
+        setFirstNameInput("");
+        setLastNameInput("");
+        setEmailInput("");
+        setPhoneInput("");
+        setMessageInput("");
+        setAcceptTerms(false);
+        setErrors({});
+      } else {
+        toast.error("Failed to submit form. Please try again.");
       }
+    } catch (error) {
+      toast.error("Error submitting form:", error);
     }
   };
 
@@ -197,13 +245,13 @@ const Contact = () => {
                       First name
                     </Label>
                     <Input
-                      className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                      className={`bg-white border ${errors.firstName ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500`}
                       type="text"
                       id="firstName"
-                      required
                       value={firstNameInput}
                       onChange={(e) => setFirstNameInput(e.target.value)}
                     />
+                    {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                   </div>
 
                   <div className="grid w-full items-center">
@@ -211,13 +259,13 @@ const Contact = () => {
                       Last name
                     </Label>
                     <Input
-                      className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                      className={`bg-white border ${errors.lastName ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500`}
                       type="text"
                       id="lastName"
-                      required
                       value={lastNameInput}
                       onChange={(e) => setLastNameInput(e.target.value)}
                     />
+                    {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                   </div>
                 </div>
 
@@ -227,13 +275,13 @@ const Contact = () => {
                       Email
                     </Label>
                     <Input
-                      className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                      className={`bg-white border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500`}
                       type="email"
                       id="email"
-                      required
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
                     />
+                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                   </div>
 
                   <div className="grid w-full items-center">
@@ -241,13 +289,13 @@ const Contact = () => {
                       Phone number
                     </Label>
                     <Input
-                      className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                      className={`bg-white border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500`}
                       type="text"
                       id="phone"
-                      required
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
                     />
+                    {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
                   </div>
                 </div>
 
@@ -257,12 +305,12 @@ const Contact = () => {
                   </Label>
                   <Textarea
                     id="message"
-                    required
                     placeholder="Type your message..."
-                    className="min-h-[11.25rem] overflow-auto bg-white border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500"
+                    className={`min-h-[11.25rem] overflow-auto bg-white border ${errors.message ? 'border-red-500' : 'border-gray-300'} rounded-lg px-4 py-2 focus:outline-none focus:border-primary-500`}
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}
                   />
+                  {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
                 </div>
 
                 <div className="mb-3 flex items-center space-x-2 text-sm text-gray-600 md:mb-4">
