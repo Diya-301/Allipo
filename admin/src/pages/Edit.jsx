@@ -3,6 +3,10 @@ import axios from 'axios';
 import { backendUrl } from '../App';
 import { toast } from 'react-toastify';
 
+// Define all possible grades based on the schema
+const ALL_PHARMA_GRADES = ['IP', 'BP', 'EP', 'USP', 'Pharma', 'NF'];
+const ALL_OTHER_GRADES = ['LR', 'AR', 'ACS', 'FCC'];
+
 const Edit = () => {
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -65,11 +69,19 @@ const Edit = () => {
 
     if (name.includes('.')) {
       const [outerKey, innerKey] = name.split('.');
+      const priceValue = parseFloat(value);
+      
+      // Validate that price cannot be less than 0
+      if (priceValue < 0) {
+        toast.error('Price cannot be less than 0');
+        return;
+      }
+
       setSelectedProduct((prev) => ({
         ...prev,
         [outerKey]: {
           ...prev[outerKey],
-          [innerKey]: { price: parseFloat(value) || 0 },
+          [innerKey]: { price: priceValue || 0 },
         },
       }));
     } else {
@@ -200,36 +212,34 @@ const Edit = () => {
 
           <h4 className="text-lg font-semibold mb-4">Pharmaceutical Grades</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {selectedProduct.pharma_grade &&
-              Object.keys(selectedProduct.pharma_grade).map((grade) => (
-                <div key={grade}>
-                  <label className="block text-sm font-medium text-gray-700">{grade} Price:</label>
-                  <input
-                    type="number"
-                    name={`pharma_grade.${grade}`}
-                    value={selectedProduct.pharma_grade[grade].price}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              ))}
+            {ALL_PHARMA_GRADES.map((grade) => (
+              <div key={grade}>
+                <label className="block text-sm font-medium text-gray-700">{grade} Price:</label>
+                <input
+                  type="number"
+                  name={`pharma_grade.${grade}`}
+                  value={selectedProduct.pharma_grade?.[grade]?.price || 0}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            ))}
           </div>
 
           <h4 className="text-lg font-semibold mb-4">Other Grades</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {selectedProduct.grade &&
-              Object.keys(selectedProduct.grade).map((grade) => (
-                <div key={grade}>
-                  <label className="block text-sm font-medium text-gray-700">{grade} Price:</label>
-                  <input
-                    type="number"
-                    name={`grade.${grade}`}
-                    value={selectedProduct.grade[grade].price}
-                    onChange={handleChange}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
-              ))}
+            {ALL_OTHER_GRADES.map((grade) => (
+              <div key={grade}>
+                <label className="block text-sm font-medium text-gray-700">{grade} Price:</label>
+                <input
+                  type="number"
+                  name={`grade.${grade}`}
+                  value={selectedProduct.grade?.[grade]?.price || 0}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            ))}
           </div>
 
           <button

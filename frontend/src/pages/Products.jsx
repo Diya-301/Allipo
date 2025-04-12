@@ -17,6 +17,11 @@ const ProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Reset current page to 1 when category filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoryFilter]);
+
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);

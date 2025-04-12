@@ -149,21 +149,25 @@ const ProductDetails = () => {
                     {product.pharma_grade && (
                       <>
                         <SelectItem value="_pharma" disabled>Pharma Grades</SelectItem>
-                        {Object.entries(product.pharma_grade).map(([grade, { price }]) => (
-                          <SelectItem key={grade} value={grade}>
-                            {grade} - ₹{price}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(product.pharma_grade)
+                          .filter(([_, { price }]) => price > 0)
+                          .map(([grade, { price }]) => (
+                            <SelectItem key={grade} value={grade}>
+                              {grade} - ₹{price}
+                            </SelectItem>
+                          ))}
                       </>
                     )}
                     {product.grade && (
                       <>
                         <SelectItem value="_regular" disabled>General Grades</SelectItem>
-                        {Object.entries(product.grade).map(([grade, { price }]) => (
-                          <SelectItem key={grade} value={grade}>
-                            {grade} - ₹{price}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(product.grade)
+                          .filter(([_, { price }]) => price > 0)
+                          .map(([grade, { price }]) => (
+                            <SelectItem key={grade} value={grade}>
+                              {grade} - ₹{price}
+                            </SelectItem>
+                          ))}
                       </>
                     )}
                   </SelectContent>
