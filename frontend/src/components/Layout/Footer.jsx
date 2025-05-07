@@ -21,7 +21,7 @@ const Footer = () => {
       },
     ],
     footerText: "© 2025 ALLIPO Chemicals. All rights reserved.",
-    footerTextBy : "Designed by Diya Savaliya.",
+    footerTextBy : "Developed by Diya Savaliya & Kalp Shah.",
     footerLinks: [
       { title: "Privacy Policy", url: "/privacy" },
       { title: "Refund Policy", url: "/refund" },
